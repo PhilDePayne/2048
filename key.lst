@@ -1,0 +1,1739 @@
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 1
+
+
+   1              		.code	16
+   2              		.file	"key.c"
+   3              		.section	.debug_abbrev,"",%progbits
+   4              	.Ldebug_abbrev0:
+   5              		.section	.debug_info,"",%progbits
+   6              	.Ldebug_info0:
+   7              		.section	.debug_line,"",%progbits
+   8              	.Ldebug_line0:
+   9 0000 B4000000 		.text
+   9      02005000 
+   9      00000201 
+   9      FB0E0D00 
+   9      01010101 
+  10              	.Ltext0:
+  11              		.align	2
+  12              		.global	checkKey
+  13              		.code 16
+  14              		.thumb_func
+  15              		.type	checkKey, %function
+  16              	checkKey:
+  17              	.LFB2:
+  18              		.file 1 "key.c"
+   1:key.c         **** /******************************************************************************
+   2:key.c         ****  *
+   3:key.c         ****  * Copyright:
+   4:key.c         ****  *    (C) 2006 Embedded Artists AB
+   5:key.c         ****  *
+   6:key.c         ****  * File:
+   7:key.c         ****  *    key.c
+   8:key.c         ****  *
+   9:key.c         ****  * Description:
+  10:key.c         ****  *    Implements sampling and handling of joystick key.
+  11:key.c         ****  *
+  12:key.c         ****  *****************************************************************************/
+  13:key.c         **** 
+  14:key.c         **** /******************************************************************************
+  15:key.c         ****  * Includes
+  16:key.c         ****  *****************************************************************************/
+  17:key.c         **** #include "../pre_emptive_os/api/osapi.h"
+  18:key.c         **** #include "../pre_emptive_os/api/general.h"
+  19:key.c         **** #include <printf_P.h>
+  20:key.c         **** #include "key.h"
+  21:key.c         **** #include "hw.h"
+  22:key.c         **** 
+  23:key.c         **** 
+  24:key.c         **** /******************************************************************************
+  25:key.c         ****  * Typedefs and defines
+  26:key.c         ****  *****************************************************************************/
+  27:key.c         **** #define FIRST_REPEAT  4
+  28:key.c         **** #define SECOND_REPEAT 3
+  29:key.c         **** 
+  30:key.c         **** #define KEYPROC_STACK_SIZE 300
+  31:key.c         **** 
+  32:key.c         **** 
+  33:key.c         **** /*****************************************************************************
+  34:key.c         ****  * Local variables
+  35:key.c         ****  ****************************************************************************/
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 2
+
+
+  36:key.c         **** static tU8 centerReleased = TRUE;
+  37:key.c         **** static tU8 keyUpReleased = TRUE;
+  38:key.c         **** static tU8 keyDownReleased = TRUE;
+  39:key.c         **** static tU8 keyLeftReleased = TRUE;
+  40:key.c         **** static tU8 keyRightReleased = TRUE;
+  41:key.c         **** static tU8 centerKeyCnt;
+  42:key.c         **** static tU8 upKeyCnt;
+  43:key.c         **** static tU8 downKeyCnt;
+  44:key.c         **** static tU8 leftKeyCnt;
+  45:key.c         **** static tU8 rightKeyCnt;
+  46:key.c         **** 
+  47:key.c         **** static volatile tU8 activeKey = KEY_NOTHING;
+  48:key.c         **** static volatile tU8 activeKey2 = KEY_NOTHING;
+  49:key.c         **** 
+  50:key.c         **** static tU8 keyProcStack[KEYPROC_STACK_SIZE];
+  51:key.c         **** static tU8 keyProcPid;
+  52:key.c         **** 
+  53:key.c         **** 
+  54:key.c         **** /*****************************************************************************
+  55:key.c         ****  *
+  56:key.c         ****  * Description:
+  57:key.c         ****  *    Function to check if any key press has been detected
+  58:key.c         ****  *
+  59:key.c         ****  ****************************************************************************/
+  60:key.c         **** tU8
+  61:key.c         **** checkKey(void)
+  62:key.c         **** {
+  19              		.loc 1 62 0
+  63:key.c         ****   tU8 retVal = activeKey;
+  20              		.loc 1 63 0
+  21 0000 024B     		ldr	r3, .L3
+  22 0002 1878     		ldrb	r0, [r3]
+  64:key.c         ****   activeKey = KEY_NOTHING;
+  23              		.loc 1 64 0
+  24 0004 0022     		mov	r2, #0
+  25              		.loc 1 62 0
+  26              		@ lr needed for prologue
+  27              		.loc 1 64 0
+  28 0006 1A70     		strb	r2, [r3]
+  65:key.c         ****   return retVal;
+  66:key.c         **** }
+  29              		.loc 1 66 0
+  30              		@ sp needed for prologue
+  31 0008 7047     		bx	lr
+  32              	.L4:
+  33 000a 0000     		.align	2
+  34              	.L3:
+  35 000c 00000000 		.word	activeKey
+  36              	.LFE2:
+  37              		.size	checkKey, .-checkKey
+  38              		.align	2
+  39              		.global	checkKey2
+  40              		.code 16
+  41              		.thumb_func
+  42              		.type	checkKey2, %function
+  43              	checkKey2:
+  44              	.LFB3:
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 3
+
+
+  67:key.c         **** 
+  68:key.c         **** /*****************************************************************************
+  69:key.c         ****  *
+  70:key.c         ****  * Description:
+  71:key.c         ****  *    Function to check current (instantaneous) key state
+  72:key.c         ****  *
+  73:key.c         ****  ****************************************************************************/
+  74:key.c         **** tU8
+  75:key.c         **** checkKey2(void)
+  76:key.c         **** {
+  45              		.loc 1 76 0
+  77:key.c         ****   return activeKey2;
+  46              		.loc 1 77 0
+  47 0010 014B     		ldr	r3, .L7
+  48 0012 1878     		ldrb	r0, [r3]
+  49              		.loc 1 76 0
+  50              		@ lr needed for prologue
+  78:key.c         **** }
+  51              		.loc 1 78 0
+  52              		@ sp needed for prologue
+  53 0014 7047     		bx	lr
+  54              	.L8:
+  55 0016 0000     		.align	2
+  56              	.L7:
+  57 0018 01000000 		.word	activeKey2
+  58              	.LFE3:
+  59              		.size	checkKey2, .-checkKey2
+  60              		.align	2
+  61              		.global	initKeyProc
+  62              		.code 16
+  63              		.thumb_func
+  64              		.type	initKeyProc, %function
+  65              	initKeyProc:
+  66              	.LFB6:
+  79:key.c         **** 
+  80:key.c         **** /*****************************************************************************
+  81:key.c         ****  *
+  82:key.c         ****  * Description:
+  83:key.c         ****  *    Sample key states
+  84:key.c         ****  *
+  85:key.c         ****  ****************************************************************************/
+  86:key.c         **** void
+  87:key.c         **** sampleKey(void)
+  88:key.c         **** {
+  89:key.c         ****   tBool nothing = TRUE;
+  90:key.c         ****   tU8   readKeys;
+  91:key.c         ****   
+  92:key.c         ****   //get sample
+  93:key.c         ****   readKeys = getKeys();
+  94:key.c         ****   
+  95:key.c         **** 
+  96:key.c         ****   //check center key
+  97:key.c         ****   if (readKeys & KEY_CENTER)
+  98:key.c         ****   {
+  99:key.c         ****     nothing = FALSE;
+ 100:key.c         ****   	if (centerReleased == TRUE)
+ 101:key.c         ****   	{
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 4
+
+
+ 102:key.c         ****   		centerReleased = FALSE;
+ 103:key.c         ****   		centerKeyCnt = 0;
+ 104:key.c         ****   		activeKey = KEY_CENTER;
+ 105:key.c         ****   		activeKey2 = KEY_CENTER;
+ 106:key.c         ****   	}
+ 107:key.c         ****   	else
+ 108:key.c         ****   	{
+ 109:key.c         ****   	  centerKeyCnt++;
+ 110:key.c         ****   	  if (centerKeyCnt == FIRST_REPEAT)
+ 111:key.c         ****   	  {
+ 112:key.c         ****   		  activeKey = KEY_CENTER;
+ 113:key.c         ****   		  activeKey2 = KEY_CENTER;
+ 114:key.c         ****   	  }
+ 115:key.c         ****   	  else if (centerKeyCnt >= FIRST_REPEAT + SECOND_REPEAT)
+ 116:key.c         ****   	  {
+ 117:key.c         ****   		  centerKeyCnt = FIRST_REPEAT;
+ 118:key.c         ****   		  activeKey = KEY_CENTER;
+ 119:key.c         ****   		  activeKey2 = KEY_CENTER;
+ 120:key.c         ****   	  }
+ 121:key.c         ****   	}
+ 122:key.c         ****   }
+ 123:key.c         ****   else
+ 124:key.c         ****   	centerReleased = TRUE;
+ 125:key.c         **** 
+ 126:key.c         ****   //check up key
+ 127:key.c         ****   if (readKeys & KEY_UP)
+ 128:key.c         ****   {
+ 129:key.c         ****     nothing = FALSE;
+ 130:key.c         ****   	if (keyUpReleased == TRUE)
+ 131:key.c         ****   	{
+ 132:key.c         ****   		keyUpReleased = FALSE;
+ 133:key.c         ****   		upKeyCnt = 0;
+ 134:key.c         ****   		activeKey = KEY_UP;
+ 135:key.c         ****   		activeKey2 = KEY_UP;
+ 136:key.c         ****   	}
+ 137:key.c         ****   	else
+ 138:key.c         ****   	{
+ 139:key.c         ****   	  upKeyCnt++;
+ 140:key.c         ****   	  if (upKeyCnt == FIRST_REPEAT)
+ 141:key.c         ****   	  {
+ 142:key.c         ****   		  activeKey = KEY_UP;
+ 143:key.c         ****   		  activeKey2 = KEY_UP;
+ 144:key.c         ****   	  }
+ 145:key.c         ****   	  else if (upKeyCnt >= FIRST_REPEAT + SECOND_REPEAT)
+ 146:key.c         ****   	  {
+ 147:key.c         ****   		  upKeyCnt = FIRST_REPEAT;
+ 148:key.c         ****   		  activeKey = KEY_UP;
+ 149:key.c         ****   		  activeKey2 = KEY_UP;
+ 150:key.c         ****   	  }
+ 151:key.c         ****   	}
+ 152:key.c         ****   }
+ 153:key.c         ****   else
+ 154:key.c         ****   	keyUpReleased = TRUE;
+ 155:key.c         **** 
+ 156:key.c         ****   //check down key
+ 157:key.c         ****   if (readKeys & KEY_DOWN)
+ 158:key.c         ****   {
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 5
+
+
+ 159:key.c         ****     nothing = FALSE;
+ 160:key.c         ****   	if (keyDownReleased == TRUE)
+ 161:key.c         ****   	{
+ 162:key.c         ****   		keyDownReleased = FALSE;
+ 163:key.c         ****   		downKeyCnt = 0;
+ 164:key.c         ****   		activeKey = KEY_DOWN;
+ 165:key.c         ****   		activeKey2 = KEY_DOWN;
+ 166:key.c         ****   	}
+ 167:key.c         ****   	else
+ 168:key.c         ****   	{
+ 169:key.c         ****   	  downKeyCnt++;
+ 170:key.c         ****   	  if (downKeyCnt == FIRST_REPEAT)
+ 171:key.c         ****   	  {
+ 172:key.c         ****   		  activeKey = KEY_DOWN;
+ 173:key.c         ****   		  activeKey2 = KEY_DOWN;
+ 174:key.c         ****   	  }
+ 175:key.c         ****   	  else if (downKeyCnt >= FIRST_REPEAT + SECOND_REPEAT)
+ 176:key.c         ****   	  {
+ 177:key.c         ****   		  downKeyCnt = FIRST_REPEAT;
+ 178:key.c         ****   		  activeKey = KEY_DOWN;
+ 179:key.c         ****   		  activeKey2 = KEY_DOWN;
+ 180:key.c         ****   	  }
+ 181:key.c         ****   	}
+ 182:key.c         ****   }
+ 183:key.c         ****   else
+ 184:key.c         ****   	keyDownReleased = TRUE;
+ 185:key.c         **** 
+ 186:key.c         ****   //check left key
+ 187:key.c         ****   if (readKeys & KEY_LEFT)
+ 188:key.c         ****   {
+ 189:key.c         ****     nothing = FALSE;
+ 190:key.c         ****   	if (keyLeftReleased == TRUE)
+ 191:key.c         ****   	{
+ 192:key.c         ****   		keyLeftReleased = FALSE;
+ 193:key.c         ****   		leftKeyCnt = 0;
+ 194:key.c         ****   		activeKey = KEY_LEFT;
+ 195:key.c         ****   		activeKey2 = KEY_LEFT;
+ 196:key.c         ****   	}
+ 197:key.c         ****   	else
+ 198:key.c         ****   	{
+ 199:key.c         ****   	  leftKeyCnt++;
+ 200:key.c         ****   	  if (leftKeyCnt == FIRST_REPEAT)
+ 201:key.c         ****   	  {
+ 202:key.c         ****   		  activeKey = KEY_LEFT;
+ 203:key.c         ****   		  activeKey2 = KEY_LEFT;
+ 204:key.c         ****   	  }
+ 205:key.c         ****   	  else if (leftKeyCnt >= FIRST_REPEAT + SECOND_REPEAT)
+ 206:key.c         ****   	  {
+ 207:key.c         ****   		  leftKeyCnt = FIRST_REPEAT;
+ 208:key.c         ****   		  activeKey = KEY_LEFT;
+ 209:key.c         ****   		  activeKey2 = KEY_LEFT;
+ 210:key.c         ****   	  }
+ 211:key.c         ****   	}
+ 212:key.c         ****   }
+ 213:key.c         ****   else
+ 214:key.c         ****   	keyLeftReleased = TRUE;
+ 215:key.c         **** 
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 6
+
+
+ 216:key.c         ****   //check right key
+ 217:key.c         ****   if (readKeys & KEY_RIGHT)
+ 218:key.c         ****   {
+ 219:key.c         ****     nothing = FALSE;
+ 220:key.c         ****   	if (keyRightReleased == TRUE)
+ 221:key.c         ****   	{
+ 222:key.c         ****   		keyRightReleased = FALSE;
+ 223:key.c         ****   		rightKeyCnt = 0;
+ 224:key.c         ****   		activeKey = KEY_RIGHT;
+ 225:key.c         ****   		activeKey2 = KEY_RIGHT;
+ 226:key.c         ****   	}
+ 227:key.c         ****   	else
+ 228:key.c         ****   	{
+ 229:key.c         ****   	  rightKeyCnt++;
+ 230:key.c         ****   	  if (rightKeyCnt == FIRST_REPEAT)
+ 231:key.c         ****   	  {
+ 232:key.c         ****   		  activeKey = KEY_RIGHT;
+ 233:key.c         ****   		  activeKey2 = KEY_RIGHT;
+ 234:key.c         ****   	  }
+ 235:key.c         ****   	  else if (rightKeyCnt >= FIRST_REPEAT + SECOND_REPEAT)
+ 236:key.c         ****   	  {
+ 237:key.c         ****   		  rightKeyCnt = FIRST_REPEAT;
+ 238:key.c         ****   		  activeKey = KEY_RIGHT;
+ 239:key.c         ****   		  activeKey2 = KEY_RIGHT;
+ 240:key.c         ****   	  }
+ 241:key.c         ****   	}
+ 242:key.c         ****   }
+ 243:key.c         ****   else
+ 244:key.c         ****   	keyRightReleased = TRUE;
+ 245:key.c         ****   
+ 246:key.c         ****   if (nothing == TRUE)
+ 247:key.c         ****     activeKey2 = KEY_NOTHING;
+ 248:key.c         **** }
+ 249:key.c         **** 
+ 250:key.c         **** 
+ 251:key.c         **** /*****************************************************************************
+ 252:key.c         ****  *
+ 253:key.c         ****  * Description:
+ 254:key.c         ****  *    A process entry function 
+ 255:key.c         ****  *
+ 256:key.c         ****  * Params:
+ 257:key.c         ****  *    [in] arg - This parameter is not used in this application. 
+ 258:key.c         ****  *
+ 259:key.c         ****  ****************************************************************************/
+ 260:key.c         **** static void
+ 261:key.c         **** procKey(void* arg)
+ 262:key.c         **** {
+ 263:key.c         ****   //sample keys each 50 ms, i.e., 20 times per second
+ 264:key.c         ****   while(1)
+ 265:key.c         ****   {
+ 266:key.c         ****     sampleKey();
+ 267:key.c         ****     osSleep(5);
+ 268:key.c         ****   }
+ 269:key.c         **** }
+ 270:key.c         **** 
+ 271:key.c         **** /*****************************************************************************
+ 272:key.c         ****  *
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 7
+
+
+ 273:key.c         ****  * Description:
+ 274:key.c         ****  *    Creates and starts the key sampling process. 
+ 275:key.c         ****  *
+ 276:key.c         ****  ****************************************************************************/
+ 277:key.c         **** void
+ 278:key.c         **** initKeyProc(void)
+ 279:key.c         **** {
+  67              		.loc 1 279 0
+  68 001c 30B5     		push	{r4, r5, lr}
+  69              	.LCFI0:
+  70 001e 84B0     		sub	sp, sp, #16
+  71              	.LCFI1:
+ 280:key.c         ****   tU8 error;
+ 281:key.c         **** 
+ 282:key.c         ****   osCreateProcess(procKey, keyProcStack, KEYPROC_STACK_SIZE, &keyProcPid, 3, NULL, &error);
+  72              		.loc 1 282 0
+  73 0020 0B4D     		ldr	r5, .L11
+  74 0022 0323     		mov	r3, #3
+  75 0024 0093     		str	r3, [sp]
+  76 0026 6C46     		mov	r4, sp
+  77 0028 0023     		mov	r3, #0
+  78 002a 9622     		mov	r2, #150
+  79 002c 5200     		lsl	r2, r2, #1
+  80 002e 0193     		str	r3, [sp, #4]
+  81 0030 0F34     		add	r4, r4, #15
+  82 0032 2B1C     		mov	r3, r5
+  83 0034 0748     		ldr	r0, .L11+4
+  84 0036 0849     		ldr	r1, .L11+8
+  85 0038 0294     		str	r4, [sp, #8]
+  86 003a FFF7FEFF 		bl	osCreateProcess
+ 283:key.c         ****   osStartProcess(keyProcPid, &error);
+  87              		.loc 1 283 0
+  88 003e 2878     		ldrb	r0, [r5]
+  89 0040 211C     		mov	r1, r4
+  90 0042 FFF7FEFF 		bl	osStartProcess
+ 284:key.c         **** }
+  91              		.loc 1 284 0
+  92 0046 04B0     		add	sp, sp, #16
+  93              		@ sp needed for prologue
+  94 0048 30BC     		pop	{r4, r5}
+  95 004a 01BC     		pop	{r0}
+  96 004c 0047     		bx	r0
+  97              	.L12:
+  98 004e 0000     		.align	2
+  99              	.L11:
+ 100 0050 33010000 		.word	keyProcPid
+ 101 0054 00000000 		.word	procKey
+ 102 0058 07000000 		.word	keyProcStack
+ 103              	.LFE6:
+ 104              		.size	initKeyProc, .-initKeyProc
+ 105              		.align	2
+ 106              		.global	sampleKey
+ 107              		.code 16
+ 108              		.thumb_func
+ 109              		.type	sampleKey, %function
+ 110              	sampleKey:
+ 111              	.LFB4:
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 8
+
+
+ 112              		.loc 1 88 0
+ 113 005c 30B5     		push	{r4, r5, lr}
+ 114              	.LCFI2:
+ 115              		.loc 1 93 0
+ 116 005e FFF7FEFF 		bl	getKeys
+ 117 0062 051C     		mov	r5, r0
+ 118              		.loc 1 97 0
+ 119 0064 1020     		mov	r0, #16
+ 120 0066 4E4A     		ldr	r2, .L78
+ 121 0068 0542     		tst	r5, r0
+ 122 006a 17D0     		beq	.L14
+ 123              		.loc 1 100 0
+ 124 006c 1378     		ldrb	r3, [r2]
+ 125 006e 4D49     		ldr	r1, .L78+4
+ 126 0070 012B     		cmp	r3, #1
+ 127 0072 02D1     		bne	.L16
+ 128              		.loc 1 102 0
+ 129 0074 0023     		mov	r3, #0
+ 130 0076 1370     		strb	r3, [r2]
+ 131 0078 09E0     		b	.L74
+ 132              	.L16:
+ 133              		.loc 1 109 0
+ 134 007a 0B78     		ldrb	r3, [r1]
+ 135 007c 0133     		add	r3, r3, #1
+ 136 007e 1B06     		lsl	r3, r3, #24
+ 137 0080 1B0E     		lsr	r3, r3, #24
+ 138 0082 0B70     		strb	r3, [r1]
+ 139              		.loc 1 110 0
+ 140 0084 042B     		cmp	r3, #4
+ 141 0086 03D0     		beq	.L61
+ 142              		.loc 1 115 0
+ 143 0088 062B     		cmp	r3, #6
+ 144 008a 05D9     		bls	.L62
+ 145              		.loc 1 117 0
+ 146 008c 0423     		mov	r3, #4
+ 147              	.L74:
+ 148 008e 0B70     		strb	r3, [r1]
+ 149              	.L61:
+ 150              		.loc 1 118 0
+ 151 0090 454B     		ldr	r3, .L78+8
+ 152 0092 1870     		strb	r0, [r3]
+ 153              		.loc 1 119 0
+ 154 0094 454B     		ldr	r3, .L78+12
+ 155 0096 1870     		strb	r0, [r3]
+ 156              	.L62:
+ 157 0098 0024     		mov	r4, #0
+ 158              	.LVL0:
+ 159 009a 02E0     		b	.L18
+ 160              	.LVL1:
+ 161              	.L14:
+ 162              		.loc 1 124 0
+ 163 009c 0123     		mov	r3, #1
+ 164 009e 1370     		strb	r3, [r2]
+ 165 00a0 0124     		mov	r4, #1
+ 166              	.LVL2:
+ 167              	.L18:
+ 168              		.loc 1 127 0
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 9
+
+
+ 169 00a2 0120     		mov	r0, #1
+ 170 00a4 424A     		ldr	r2, .L78+16
+ 171 00a6 0542     		tst	r5, r0
+ 172 00a8 17D0     		beq	.L23
+ 173              		.loc 1 130 0
+ 174 00aa 1378     		ldrb	r3, [r2]
+ 175 00ac 4149     		ldr	r1, .L78+20
+ 176 00ae 012B     		cmp	r3, #1
+ 177 00b0 02D1     		bne	.L25
+ 178              		.loc 1 132 0
+ 179 00b2 0023     		mov	r3, #0
+ 180 00b4 1370     		strb	r3, [r2]
+ 181 00b6 09E0     		b	.L75
+ 182              	.L25:
+ 183              		.loc 1 139 0
+ 184 00b8 0B78     		ldrb	r3, [r1]
+ 185 00ba 0133     		add	r3, r3, #1
+ 186 00bc 1B06     		lsl	r3, r3, #24
+ 187 00be 1B0E     		lsr	r3, r3, #24
+ 188 00c0 0B70     		strb	r3, [r1]
+ 189              		.loc 1 140 0
+ 190 00c2 042B     		cmp	r3, #4
+ 191 00c4 03D0     		beq	.L64
+ 192              		.loc 1 145 0
+ 193 00c6 062B     		cmp	r3, #6
+ 194 00c8 05D9     		bls	.L65
+ 195              		.loc 1 147 0
+ 196 00ca 0423     		mov	r3, #4
+ 197              	.L75:
+ 198 00cc 0B70     		strb	r3, [r1]
+ 199              	.L64:
+ 200              		.loc 1 148 0
+ 201 00ce 364B     		ldr	r3, .L78+8
+ 202 00d0 1870     		strb	r0, [r3]
+ 203              		.loc 1 149 0
+ 204 00d2 364B     		ldr	r3, .L78+12
+ 205 00d4 1870     		strb	r0, [r3]
+ 206              	.L65:
+ 207 00d6 0024     		mov	r4, #0
+ 208 00d8 00E0     		b	.L27
+ 209              	.L23:
+ 210              		.loc 1 154 0
+ 211 00da 1070     		strb	r0, [r2]
+ 212              	.L27:
+ 213              		.loc 1 157 0
+ 214 00dc 0420     		mov	r0, #4
+ 215 00de 364A     		ldr	r2, .L78+24
+ 216 00e0 0542     		tst	r5, r0
+ 217 00e2 17D0     		beq	.L32
+ 218              		.loc 1 160 0
+ 219 00e4 1378     		ldrb	r3, [r2]
+ 220 00e6 3549     		ldr	r1, .L78+28
+ 221 00e8 012B     		cmp	r3, #1
+ 222 00ea 03D1     		bne	.L34
+ 223              		.loc 1 162 0
+ 224 00ec 0023     		mov	r3, #0
+ 225 00ee 1370     		strb	r3, [r2]
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 10
+
+
+ 226              		.loc 1 163 0
+ 227 00f0 0B70     		strb	r3, [r1]
+ 228 00f2 09E0     		b	.L67
+ 229              	.L34:
+ 230              		.loc 1 169 0
+ 231 00f4 0B78     		ldrb	r3, [r1]
+ 232 00f6 0133     		add	r3, r3, #1
+ 233 00f8 1B06     		lsl	r3, r3, #24
+ 234 00fa 1B0E     		lsr	r3, r3, #24
+ 235 00fc 0B70     		strb	r3, [r1]
+ 236              		.loc 1 170 0
+ 237 00fe 042B     		cmp	r3, #4
+ 238 0100 02D0     		beq	.L67
+ 239              		.loc 1 175 0
+ 240 0102 062B     		cmp	r3, #6
+ 241 0104 04D9     		bls	.L68
+ 242              		.loc 1 177 0
+ 243 0106 0870     		strb	r0, [r1]
+ 244              	.L67:
+ 245              		.loc 1 178 0
+ 246 0108 274B     		ldr	r3, .L78+8
+ 247 010a 1870     		strb	r0, [r3]
+ 248              		.loc 1 179 0
+ 249 010c 274B     		ldr	r3, .L78+12
+ 250 010e 1870     		strb	r0, [r3]
+ 251              	.L68:
+ 252 0110 0024     		mov	r4, #0
+ 253 0112 01E0     		b	.L36
+ 254              	.L32:
+ 255              		.loc 1 184 0
+ 256 0114 0123     		mov	r3, #1
+ 257 0116 1370     		strb	r3, [r2]
+ 258              	.L36:
+ 259              		.loc 1 187 0
+ 260 0118 0820     		mov	r0, #8
+ 261 011a 294A     		ldr	r2, .L78+32
+ 262 011c 0542     		tst	r5, r0
+ 263 011e 17D0     		beq	.L41
+ 264              		.loc 1 190 0
+ 265 0120 1378     		ldrb	r3, [r2]
+ 266 0122 2849     		ldr	r1, .L78+36
+ 267 0124 012B     		cmp	r3, #1
+ 268 0126 02D1     		bne	.L43
+ 269              		.loc 1 192 0
+ 270 0128 0023     		mov	r3, #0
+ 271 012a 1370     		strb	r3, [r2]
+ 272 012c 09E0     		b	.L76
+ 273              	.L43:
+ 274              		.loc 1 199 0
+ 275 012e 0B78     		ldrb	r3, [r1]
+ 276 0130 0133     		add	r3, r3, #1
+ 277 0132 1B06     		lsl	r3, r3, #24
+ 278 0134 1B0E     		lsr	r3, r3, #24
+ 279 0136 0B70     		strb	r3, [r1]
+ 280              		.loc 1 200 0
+ 281 0138 042B     		cmp	r3, #4
+ 282 013a 03D0     		beq	.L70
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 11
+
+
+ 283              		.loc 1 205 0
+ 284 013c 062B     		cmp	r3, #6
+ 285 013e 05D9     		bls	.L71
+ 286              		.loc 1 207 0
+ 287 0140 0423     		mov	r3, #4
+ 288              	.L76:
+ 289 0142 0B70     		strb	r3, [r1]
+ 290              	.L70:
+ 291              		.loc 1 208 0
+ 292 0144 184B     		ldr	r3, .L78+8
+ 293 0146 1870     		strb	r0, [r3]
+ 294              		.loc 1 209 0
+ 295 0148 184B     		ldr	r3, .L78+12
+ 296 014a 1870     		strb	r0, [r3]
+ 297              	.L71:
+ 298 014c 0024     		mov	r4, #0
+ 299 014e 01E0     		b	.L45
+ 300              	.L41:
+ 301              		.loc 1 214 0
+ 302 0150 0123     		mov	r3, #1
+ 303 0152 1370     		strb	r3, [r2]
+ 304              	.L45:
+ 305              		.loc 1 217 0
+ 306 0154 0220     		mov	r0, #2
+ 307 0156 291C     		mov	r1, r5
+ 308 0158 1B4A     		ldr	r2, .L78+40
+ 309 015a 0140     		and	r1, r0
+ 310 015c 16D0     		beq	.L50
+ 311              		.loc 1 220 0
+ 312 015e 1378     		ldrb	r3, [r2]
+ 313 0160 1A49     		ldr	r1, .L78+44
+ 314 0162 012B     		cmp	r3, #1
+ 315 0164 02D1     		bne	.L52
+ 316              		.loc 1 222 0
+ 317 0166 0023     		mov	r3, #0
+ 318 0168 1370     		strb	r3, [r2]
+ 319 016a 09E0     		b	.L77
+ 320              	.L52:
+ 321              		.loc 1 229 0
+ 322 016c 0B78     		ldrb	r3, [r1]
+ 323 016e 0133     		add	r3, r3, #1
+ 324 0170 1B06     		lsl	r3, r3, #24
+ 325 0172 1B0E     		lsr	r3, r3, #24
+ 326 0174 0B70     		strb	r3, [r1]
+ 327              		.loc 1 230 0
+ 328 0176 042B     		cmp	r3, #4
+ 329 0178 03D0     		beq	.L73
+ 330              		.loc 1 235 0
+ 331 017a 062B     		cmp	r3, #6
+ 332 017c 0CD9     		bls	.L59
+ 333              		.loc 1 237 0
+ 334 017e 0423     		mov	r3, #4
+ 335              	.L77:
+ 336 0180 0B70     		strb	r3, [r1]
+ 337              	.L73:
+ 338              		.loc 1 238 0
+ 339 0182 094B     		ldr	r3, .L78+8
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 12
+
+
+ 340 0184 1870     		strb	r0, [r3]
+ 341              		.loc 1 239 0
+ 342 0186 094B     		ldr	r3, .L78+12
+ 343 0188 1870     		strb	r0, [r3]
+ 344 018a 05E0     		b	.L59
+ 345              	.L50:
+ 346              		.loc 1 244 0
+ 347 018c 0123     		mov	r3, #1
+ 348 018e 1370     		strb	r3, [r2]
+ 349              		.loc 1 246 0
+ 350 0190 012C     		cmp	r4, #1
+ 351 0192 01D1     		bne	.L59
+ 352              		.loc 1 247 0
+ 353 0194 054B     		ldr	r3, .L78+12
+ 354 0196 1970     		strb	r1, [r3]
+ 355              	.L59:
+ 356              		.loc 1 248 0
+ 357              		@ sp needed for prologue
+ 358              	.LVL3:
+ 359 0198 30BC     		pop	{r4, r5}
+ 360 019a 01BC     		pop	{r0}
+ 361 019c 0047     		bx	r0
+ 362              	.L79:
+ 363 019e 0000     		.align	2
+ 364              	.L78:
+ 365 01a0 00000000 		.word	centerReleased
+ 366 01a4 02000000 		.word	centerKeyCnt
+ 367 01a8 00000000 		.word	activeKey
+ 368 01ac 01000000 		.word	activeKey2
+ 369 01b0 01000000 		.word	keyUpReleased
+ 370 01b4 03000000 		.word	upKeyCnt
+ 371 01b8 02000000 		.word	keyDownReleased
+ 372 01bc 04000000 		.word	downKeyCnt
+ 373 01c0 03000000 		.word	keyLeftReleased
+ 374 01c4 05000000 		.word	leftKeyCnt
+ 375 01c8 04000000 		.word	keyRightReleased
+ 376 01cc 06000000 		.word	rightKeyCnt
+ 377              	.LFE4:
+ 378              		.size	sampleKey, .-sampleKey
+ 379              		.align	2
+ 380              		.code 16
+ 381              		.thumb_func
+ 382              		.type	procKey, %function
+ 383              	procKey:
+ 384              	.LFB5:
+ 385              		.loc 1 262 0
+ 386 01d0 00B5     		push	{lr}
+ 387              	.LCFI3:
+ 388              	.LVL4:
+ 389              	.L82:
+ 390              		.loc 1 266 0
+ 391 01d2 FFF7FEFF 		bl	sampleKey
+ 392              	.LVL5:
+ 393              		.loc 1 267 0
+ 394 01d6 0520     		mov	r0, #5
+ 395 01d8 FFF7FEFF 		bl	osSleep
+ 396 01dc F9E7     		b	.L82
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 13
+
+
+ 397              	.LFE5:
+ 398              		.size	procKey, .-procKey
+ 399              		.data
+ 400              		.type	centerReleased, %object
+ 401              		.size	centerReleased, 1
+ 402              	centerReleased:
+ 403 0000 01       		.byte	1
+ 404              		.bss
+ 405              	activeKey:
+ 406 0000 00       		.space	1
+ 407              	activeKey2:
+ 408 0001 00       		.space	1
+ 409              		.data
+ 410              		.type	keyUpReleased, %object
+ 411              		.size	keyUpReleased, 1
+ 412              	keyUpReleased:
+ 413 0001 01       		.byte	1
+ 414              		.type	keyDownReleased, %object
+ 415              		.size	keyDownReleased, 1
+ 416              	keyDownReleased:
+ 417 0002 01       		.byte	1
+ 418              		.type	keyLeftReleased, %object
+ 419              		.size	keyLeftReleased, 1
+ 420              	keyLeftReleased:
+ 421 0003 01       		.byte	1
+ 422              		.type	keyRightReleased, %object
+ 423              		.size	keyRightReleased, 1
+ 424              	keyRightReleased:
+ 425 0004 01       		.byte	1
+ 426              		.bss
+ 427              	centerKeyCnt:
+ 428 0002 00       		.space	1
+ 429              	upKeyCnt:
+ 430 0003 00       		.space	1
+ 431              	downKeyCnt:
+ 432 0004 00       		.space	1
+ 433              	leftKeyCnt:
+ 434 0005 00       		.space	1
+ 435              	rightKeyCnt:
+ 436 0006 00       		.space	1
+ 437              	keyProcStack:
+ 438 0007 00000000 		.space	300
+ 438      00000000 
+ 438      00000000 
+ 438      00000000 
+ 438      00000000 
+ 439              	keyProcPid:
+ 440 0133 00       		.space	1
+ 441              		.section	.debug_frame,"",%progbits
+ 442              	.Lframe0:
+ 443 0000 0C000000 		.4byte	.LECIE0-.LSCIE0
+ 444              	.LSCIE0:
+ 445 0004 FFFFFFFF 		.4byte	0xffffffff
+ 446 0008 01       		.byte	0x1
+ 447 0009 00       		.ascii	"\000"
+ 448 000a 01       		.uleb128 0x1
+ 449 000b 7C       		.sleb128 -4
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 14
+
+
+ 450 000c 0E       		.byte	0xe
+ 451 000d 0C       		.byte	0xc
+ 452 000e 0D       		.uleb128 0xd
+ 453 000f 00       		.uleb128 0x0
+ 454              		.align	2
+ 455              	.LECIE0:
+ 456              	.LSFDE0:
+ 457 0010 0C000000 		.4byte	.LEFDE0-.LASFDE0
+ 458              	.LASFDE0:
+ 459 0014 00000000 		.4byte	.Lframe0
+ 460 0018 00000000 		.4byte	.LFB2
+ 461 001c 10000000 		.4byte	.LFE2-.LFB2
+ 462              		.align	2
+ 463              	.LEFDE0:
+ 464              	.LSFDE2:
+ 465 0020 0C000000 		.4byte	.LEFDE2-.LASFDE2
+ 466              	.LASFDE2:
+ 467 0024 00000000 		.4byte	.Lframe0
+ 468 0028 10000000 		.4byte	.LFB3
+ 469 002c 0C000000 		.4byte	.LFE3-.LFB3
+ 470              		.align	2
+ 471              	.LEFDE2:
+ 472              	.LSFDE4:
+ 473 0030 18000000 		.4byte	.LEFDE4-.LASFDE4
+ 474              	.LASFDE4:
+ 475 0034 00000000 		.4byte	.Lframe0
+ 476 0038 1C000000 		.4byte	.LFB6
+ 477 003c 40000000 		.4byte	.LFE6-.LFB6
+ 478 0040 42       		.byte	0x4
+ 479              		.4byte	.LCFI0-.LFB6
+ 480 0041 0E       		.byte	0xe
+ 481 0042 0C       		.uleb128 0xc
+ 482 0043 84       		.byte	0x84
+ 483 0044 03       		.uleb128 0x3
+ 484 0045 85       		.byte	0x85
+ 485 0046 02       		.uleb128 0x2
+ 486 0047 8E       		.byte	0x8e
+ 487 0048 01       		.uleb128 0x1
+ 488 0049 42       		.byte	0x4
+ 489              		.4byte	.LCFI1-.LCFI0
+ 490 004a 0E       		.byte	0xe
+ 491 004b 1C       		.uleb128 0x1c
+ 492              		.align	2
+ 493              	.LEFDE4:
+ 494              	.LSFDE6:
+ 495 004c 18000000 		.4byte	.LEFDE6-.LASFDE6
+ 496              	.LASFDE6:
+ 497 0050 00000000 		.4byte	.Lframe0
+ 498 0054 5C000000 		.4byte	.LFB4
+ 499 0058 74010000 		.4byte	.LFE4-.LFB4
+ 500 005c 42       		.byte	0x4
+ 501              		.4byte	.LCFI2-.LFB4
+ 502 005d 0E       		.byte	0xe
+ 503 005e 0C       		.uleb128 0xc
+ 504 005f 84       		.byte	0x84
+ 505 0060 03       		.uleb128 0x3
+ 506 0061 85       		.byte	0x85
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 15
+
+
+ 507 0062 02       		.uleb128 0x2
+ 508 0063 8E       		.byte	0x8e
+ 509 0064 01       		.uleb128 0x1
+ 510 0065 000000   		.align	2
+ 511              	.LEFDE6:
+ 512              	.LSFDE8:
+ 513 0068 14000000 		.4byte	.LEFDE8-.LASFDE8
+ 514              	.LASFDE8:
+ 515 006c 00000000 		.4byte	.Lframe0
+ 516 0070 D0010000 		.4byte	.LFB5
+ 517 0074 0E000000 		.4byte	.LFE5-.LFB5
+ 518 0078 42       		.byte	0x4
+ 519              		.4byte	.LCFI3-.LFB5
+ 520 0079 0E       		.byte	0xe
+ 521 007a 04       		.uleb128 0x4
+ 522 007b 8E       		.byte	0x8e
+ 523 007c 01       		.uleb128 0x1
+ 524 007d 000000   		.align	2
+ 525              	.LEFDE8:
+ 526              		.file 2 "./startup/../pre_emptive_os/api/../api/general.h"
+ 527              		.text
+ 528              	.Letext0:
+ 529 01de C046     		.section	.debug_loc,"",%progbits
+ 530              	.Ldebug_loc0:
+ 531              	.LLST2:
+ 532 0000 1C000000 		.4byte	.LFB6-.Ltext0
+ 533 0004 1E000000 		.4byte	.LCFI0-.Ltext0
+ 534 0008 0100     		.2byte	0x1
+ 535 000a 5D       		.byte	0x5d
+ 536 000b 1E000000 		.4byte	.LCFI0-.Ltext0
+ 537 000f 20000000 		.4byte	.LCFI1-.Ltext0
+ 538 0013 0200     		.2byte	0x2
+ 539 0015 7D       		.byte	0x7d
+ 540 0016 0C       		.sleb128 12
+ 541 0017 20000000 		.4byte	.LCFI1-.Ltext0
+ 542 001b 5C000000 		.4byte	.LFE6-.Ltext0
+ 543 001f 0200     		.2byte	0x2
+ 544 0021 7D       		.byte	0x7d
+ 545 0022 1C       		.sleb128 28
+ 546 0023 00000000 		.4byte	0x0
+ 547 0027 00000000 		.4byte	0x0
+ 548              	.LLST3:
+ 549 002b 5C000000 		.4byte	.LFB4-.Ltext0
+ 550 002f 5E000000 		.4byte	.LCFI2-.Ltext0
+ 551 0033 0100     		.2byte	0x1
+ 552 0035 5D       		.byte	0x5d
+ 553 0036 5E000000 		.4byte	.LCFI2-.Ltext0
+ 554 003a D0010000 		.4byte	.LFE4-.Ltext0
+ 555 003e 0200     		.2byte	0x2
+ 556 0040 7D       		.byte	0x7d
+ 557 0041 0C       		.sleb128 12
+ 558 0042 00000000 		.4byte	0x0
+ 559 0046 00000000 		.4byte	0x0
+ 560              	.LLST4:
+ 561 004a 9A000000 		.4byte	.LVL0-.Ltext0
+ 562 004e 9C000000 		.4byte	.LVL1-.Ltext0
+ 563 0052 0100     		.2byte	0x1
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 16
+
+
+ 564 0054 54       		.byte	0x54
+ 565 0055 A2000000 		.4byte	.LVL2-.Ltext0
+ 566 0059 98010000 		.4byte	.LVL3-.Ltext0
+ 567 005d 0100     		.2byte	0x1
+ 568 005f 54       		.byte	0x54
+ 569 0060 00000000 		.4byte	0x0
+ 570 0064 00000000 		.4byte	0x0
+ 571              	.LLST5:
+ 572 0068 D0010000 		.4byte	.LFB5-.Ltext0
+ 573 006c D2010000 		.4byte	.LCFI3-.Ltext0
+ 574 0070 0100     		.2byte	0x1
+ 575 0072 5D       		.byte	0x5d
+ 576 0073 D2010000 		.4byte	.LCFI3-.Ltext0
+ 577 0077 DE010000 		.4byte	.LFE5-.Ltext0
+ 578 007b 0200     		.2byte	0x2
+ 579 007d 7D       		.byte	0x7d
+ 580 007e 04       		.sleb128 4
+ 581 007f 00000000 		.4byte	0x0
+ 582 0083 00000000 		.4byte	0x0
+ 583              	.LLST6:
+ 584 0087 D2010000 		.4byte	.LVL4-.Ltext0
+ 585 008b D6010000 		.4byte	.LVL5-.Ltext0
+ 586 008f 0100     		.2byte	0x1
+ 587 0091 50       		.byte	0x50
+ 588 0092 00000000 		.4byte	0x0
+ 589 0096 00000000 		.4byte	0x0
+ 590              		.section	.debug_info
+ 591 0000 37020000 		.4byte	0x237
+ 592 0004 0200     		.2byte	0x2
+ 593 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 594 000a 04       		.byte	0x4
+ 595 000b 01       		.uleb128 0x1
+ 596 000c 00000000 		.4byte	.Ldebug_line0
+ 597 0010 DE010000 		.4byte	.Letext0
+ 598 0014 00000000 		.4byte	.Ltext0
+ 599 0018 F3000000 		.4byte	.LASF28
+ 600 001c 01       		.byte	0x1
+ 601 001d 19000000 		.4byte	.LASF29
+ 602 0021 2E010000 		.4byte	.LASF30
+ 603 0025 02       		.uleb128 0x2
+ 604 0026 74553800 		.ascii	"tU8\000"
+ 605 002a 02       		.byte	0x2
+ 606 002b 47       		.byte	0x47
+ 607 002c 30000000 		.4byte	0x30
+ 608 0030 03       		.uleb128 0x3
+ 609 0031 6A000000 		.4byte	.LASF0
+ 610 0035 01       		.byte	0x1
+ 611 0036 08       		.byte	0x8
+ 612 0037 03       		.uleb128 0x3
+ 613 0038 92000000 		.4byte	.LASF1
+ 614 003c 02       		.byte	0x2
+ 615 003d 07       		.byte	0x7
+ 616 003e 03       		.uleb128 0x3
+ 617 003f D0000000 		.4byte	.LASF2
+ 618 0043 04       		.byte	0x4
+ 619 0044 07       		.byte	0x7
+ 620 0045 03       		.uleb128 0x3
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 17
+
+
+ 621 0046 4A010000 		.4byte	.LASF3
+ 622 004a 01       		.byte	0x1
+ 623 004b 06       		.byte	0x6
+ 624 004c 03       		.uleb128 0x3
+ 625 004d 0A010000 		.4byte	.LASF4
+ 626 0051 02       		.byte	0x2
+ 627 0052 05       		.byte	0x5
+ 628 0053 04       		.uleb128 0x4
+ 629 0054 696E7400 		.ascii	"int\000"
+ 630 0058 04       		.byte	0x4
+ 631 0059 05       		.byte	0x5
+ 632 005a 05       		.uleb128 0x5
+ 633 005b 56010000 		.4byte	.LASF5
+ 634 005f 02       		.byte	0x2
+ 635 0060 4D       		.byte	0x4d
+ 636 0061 30000000 		.4byte	0x30
+ 637 0065 03       		.uleb128 0x3
+ 638 0066 78000000 		.4byte	.LASF6
+ 639 006a 04       		.byte	0x4
+ 640 006b 07       		.byte	0x7
+ 641 006c 06       		.uleb128 0x6
+ 642 006d 04       		.byte	0x4
+ 643 006e 07       		.uleb128 0x7
+ 644 006f 97000000 		.4byte	0x97
+ 645 0073 01       		.byte	0x1
+ 646 0074 25010000 		.4byte	.LASF7
+ 647 0078 01       		.byte	0x1
+ 648 0079 3E       		.byte	0x3e
+ 649 007a 01       		.byte	0x1
+ 650 007b 25000000 		.4byte	0x25
+ 651 007f 00000000 		.4byte	.LFB2
+ 652 0083 10000000 		.4byte	.LFE2
+ 653 0087 01       		.byte	0x1
+ 654 0088 5D       		.byte	0x5d
+ 655 0089 08       		.uleb128 0x8
+ 656 008a 3C000000 		.4byte	.LASF9
+ 657 008e 01       		.byte	0x1
+ 658 008f 3F       		.byte	0x3f
+ 659 0090 25000000 		.4byte	0x25
+ 660 0094 01       		.byte	0x1
+ 661 0095 50       		.byte	0x50
+ 662 0096 00       		.byte	0x0
+ 663 0097 09       		.uleb128 0x9
+ 664 0098 01       		.byte	0x1
+ 665 0099 5C010000 		.4byte	.LASF31
+ 666 009d 01       		.byte	0x1
+ 667 009e 4C       		.byte	0x4c
+ 668 009f 01       		.byte	0x1
+ 669 00a0 25000000 		.4byte	0x25
+ 670 00a4 10000000 		.4byte	.LFB3
+ 671 00a8 1C000000 		.4byte	.LFE3
+ 672 00ac 01       		.byte	0x1
+ 673 00ad 5D       		.byte	0x5d
+ 674 00ae 0A       		.uleb128 0xa
+ 675 00af D8000000 		.4byte	0xd8
+ 676 00b3 01       		.byte	0x1
+ 677 00b4 4F000000 		.4byte	.LASF8
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 18
+
+
+ 678 00b8 01       		.byte	0x1
+ 679 00b9 1701     		.2byte	0x117
+ 680 00bb 01       		.byte	0x1
+ 681 00bc 1C000000 		.4byte	.LFB6
+ 682 00c0 5C000000 		.4byte	.LFE6
+ 683 00c4 00000000 		.4byte	.LLST2
+ 684 00c8 0B       		.uleb128 0xb
+ 685 00c9 14010000 		.4byte	.LASF10
+ 686 00cd 01       		.byte	0x1
+ 687 00ce 1801     		.2byte	0x118
+ 688 00d0 25000000 		.4byte	0x25
+ 689 00d4 02       		.byte	0x2
+ 690 00d5 91       		.byte	0x91
+ 691 00d6 73       		.sleb128 -13
+ 692 00d7 00       		.byte	0x0
+ 693 00d8 0C       		.uleb128 0xc
+ 694 00d9 0C010000 		.4byte	0x10c
+ 695 00dd 01       		.byte	0x1
+ 696 00de 66010000 		.4byte	.LASF11
+ 697 00e2 01       		.byte	0x1
+ 698 00e3 58       		.byte	0x58
+ 699 00e4 01       		.byte	0x1
+ 700 00e5 5C000000 		.4byte	.LFB4
+ 701 00e9 D0010000 		.4byte	.LFE4
+ 702 00ed 2B000000 		.4byte	.LLST3
+ 703 00f1 0D       		.uleb128 0xd
+ 704 00f2 AF000000 		.4byte	.LASF12
+ 705 00f6 01       		.byte	0x1
+ 706 00f7 59       		.byte	0x59
+ 707 00f8 5A000000 		.4byte	0x5a
+ 708 00fc 4A000000 		.4byte	.LLST4
+ 709 0100 0E       		.uleb128 0xe
+ 710 0101 EA000000 		.4byte	.LASF13
+ 711 0105 01       		.byte	0x1
+ 712 0106 5A       		.byte	0x5a
+ 713 0107 25000000 		.4byte	0x25
+ 714 010b 00       		.byte	0x0
+ 715 010c 0F       		.uleb128 0xf
+ 716 010d 36010000 		.4byte	0x136
+ 717 0111 8A000000 		.4byte	.LASF32
+ 718 0115 01       		.byte	0x1
+ 719 0116 0601     		.2byte	0x106
+ 720 0118 01       		.byte	0x1
+ 721 0119 D0010000 		.4byte	.LFB5
+ 722 011d DE010000 		.4byte	.LFE5
+ 723 0121 68000000 		.4byte	.LLST5
+ 724 0125 10       		.uleb128 0x10
+ 725 0126 61726700 		.ascii	"arg\000"
+ 726 012a 01       		.byte	0x1
+ 727 012b 0501     		.2byte	0x105
+ 728 012d 6C000000 		.4byte	0x6c
+ 729 0131 87000000 		.4byte	.LLST6
+ 730 0135 00       		.byte	0x0
+ 731 0136 08       		.uleb128 0x8
+ 732 0137 5B000000 		.4byte	.LASF14
+ 733 013b 01       		.byte	0x1
+ 734 013c 24       		.byte	0x24
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 19
+
+
+ 735 013d 25000000 		.4byte	0x25
+ 736 0141 05       		.byte	0x5
+ 737 0142 03       		.byte	0x3
+ 738 0143 00000000 		.4byte	centerReleased
+ 739 0147 08       		.uleb128 0x8
+ 740 0148 C2000000 		.4byte	.LASF15
+ 741 014c 01       		.byte	0x1
+ 742 014d 25       		.byte	0x25
+ 743 014e 25000000 		.4byte	0x25
+ 744 0152 05       		.byte	0x5
+ 745 0153 03       		.byte	0x3
+ 746 0154 01000000 		.4byte	keyUpReleased
+ 747 0158 08       		.uleb128 0x8
+ 748 0159 1F000000 		.4byte	.LASF16
+ 749 015d 01       		.byte	0x1
+ 750 015e 26       		.byte	0x26
+ 751 015f 25000000 		.4byte	0x25
+ 752 0163 05       		.byte	0x5
+ 753 0164 03       		.byte	0x3
+ 754 0165 02000000 		.4byte	keyDownReleased
+ 755 0169 08       		.uleb128 0x8
+ 756 016a 00000000 		.4byte	.LASF17
+ 757 016e 01       		.byte	0x1
+ 758 016f 27       		.byte	0x27
+ 759 0170 25000000 		.4byte	0x25
+ 760 0174 05       		.byte	0x5
+ 761 0175 03       		.byte	0x3
+ 762 0176 03000000 		.4byte	keyLeftReleased
+ 763 017a 08       		.uleb128 0x8
+ 764 017b 70010000 		.4byte	.LASF18
+ 765 017f 01       		.byte	0x1
+ 766 0180 28       		.byte	0x28
+ 767 0181 25000000 		.4byte	0x25
+ 768 0185 05       		.byte	0x5
+ 769 0186 03       		.byte	0x3
+ 770 0187 04000000 		.4byte	keyRightReleased
+ 771 018b 08       		.uleb128 0x8
+ 772 018c DD000000 		.4byte	.LASF19
+ 773 0190 01       		.byte	0x1
+ 774 0191 29       		.byte	0x29
+ 775 0192 25000000 		.4byte	0x25
+ 776 0196 05       		.byte	0x5
+ 777 0197 03       		.byte	0x3
+ 778 0198 02000000 		.4byte	centerKeyCnt
+ 779 019c 08       		.uleb128 0x8
+ 780 019d 10000000 		.4byte	.LASF20
+ 781 01a1 01       		.byte	0x1
+ 782 01a2 2A       		.byte	0x2a
+ 783 01a3 25000000 		.4byte	0x25
+ 784 01a7 05       		.byte	0x5
+ 785 01a8 03       		.byte	0x3
+ 786 01a9 03000000 		.4byte	upKeyCnt
+ 787 01ad 08       		.uleb128 0x8
+ 788 01ae B7000000 		.4byte	.LASF21
+ 789 01b2 01       		.byte	0x1
+ 790 01b3 2B       		.byte	0x2b
+ 791 01b4 25000000 		.4byte	0x25
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 20
+
+
+ 792 01b8 05       		.byte	0x5
+ 793 01b9 03       		.byte	0x3
+ 794 01ba 04000000 		.4byte	downKeyCnt
+ 795 01be 08       		.uleb128 0x8
+ 796 01bf 1A010000 		.4byte	.LASF22
+ 797 01c3 01       		.byte	0x1
+ 798 01c4 2C       		.byte	0x2c
+ 799 01c5 25000000 		.4byte	0x25
+ 800 01c9 05       		.byte	0x5
+ 801 01ca 03       		.byte	0x3
+ 802 01cb 05000000 		.4byte	leftKeyCnt
+ 803 01cf 08       		.uleb128 0x8
+ 804 01d0 43000000 		.4byte	.LASF23
+ 805 01d4 01       		.byte	0x1
+ 806 01d5 2D       		.byte	0x2d
+ 807 01d6 25000000 		.4byte	0x25
+ 808 01da 05       		.byte	0x5
+ 809 01db 03       		.byte	0x3
+ 810 01dc 06000000 		.4byte	rightKeyCnt
+ 811 01e0 08       		.uleb128 0x8
+ 812 01e1 A5000000 		.4byte	.LASF24
+ 813 01e5 01       		.byte	0x1
+ 814 01e6 2F       		.byte	0x2f
+ 815 01e7 F1010000 		.4byte	0x1f1
+ 816 01eb 05       		.byte	0x5
+ 817 01ec 03       		.byte	0x3
+ 818 01ed 00000000 		.4byte	activeKey
+ 819 01f1 11       		.uleb128 0x11
+ 820 01f2 25000000 		.4byte	0x25
+ 821 01f6 08       		.uleb128 0x8
+ 822 01f7 FF000000 		.4byte	.LASF25
+ 823 01fb 01       		.byte	0x1
+ 824 01fc 30       		.byte	0x30
+ 825 01fd F1010000 		.4byte	0x1f1
+ 826 0201 05       		.byte	0x5
+ 827 0202 03       		.byte	0x3
+ 828 0203 01000000 		.4byte	activeKey2
+ 829 0207 12       		.uleb128 0x12
+ 830 0208 18020000 		.4byte	0x218
+ 831 020c 25000000 		.4byte	0x25
+ 832 0210 13       		.uleb128 0x13
+ 833 0211 65000000 		.4byte	0x65
+ 834 0215 2B01     		.2byte	0x12b
+ 835 0217 00       		.byte	0x0
+ 836 0218 08       		.uleb128 0x8
+ 837 0219 2F000000 		.4byte	.LASF26
+ 838 021d 01       		.byte	0x1
+ 839 021e 32       		.byte	0x32
+ 840 021f 07020000 		.4byte	0x207
+ 841 0223 05       		.byte	0x5
+ 842 0224 03       		.byte	0x3
+ 843 0225 07000000 		.4byte	keyProcStack
+ 844 0229 08       		.uleb128 0x8
+ 845 022a 3F010000 		.4byte	.LASF27
+ 846 022e 01       		.byte	0x1
+ 847 022f 33       		.byte	0x33
+ 848 0230 25000000 		.4byte	0x25
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 21
+
+
+ 849 0234 05       		.byte	0x5
+ 850 0235 03       		.byte	0x3
+ 851 0236 33010000 		.4byte	keyProcPid
+ 852 023a 00       		.byte	0x0
+ 853              		.section	.debug_abbrev
+ 854 0000 01       		.uleb128 0x1
+ 855 0001 11       		.uleb128 0x11
+ 856 0002 01       		.byte	0x1
+ 857 0003 10       		.uleb128 0x10
+ 858 0004 06       		.uleb128 0x6
+ 859 0005 12       		.uleb128 0x12
+ 860 0006 01       		.uleb128 0x1
+ 861 0007 11       		.uleb128 0x11
+ 862 0008 01       		.uleb128 0x1
+ 863 0009 25       		.uleb128 0x25
+ 864 000a 0E       		.uleb128 0xe
+ 865 000b 13       		.uleb128 0x13
+ 866 000c 0B       		.uleb128 0xb
+ 867 000d 03       		.uleb128 0x3
+ 868 000e 0E       		.uleb128 0xe
+ 869 000f 1B       		.uleb128 0x1b
+ 870 0010 0E       		.uleb128 0xe
+ 871 0011 00       		.byte	0x0
+ 872 0012 00       		.byte	0x0
+ 873 0013 02       		.uleb128 0x2
+ 874 0014 16       		.uleb128 0x16
+ 875 0015 00       		.byte	0x0
+ 876 0016 03       		.uleb128 0x3
+ 877 0017 08       		.uleb128 0x8
+ 878 0018 3A       		.uleb128 0x3a
+ 879 0019 0B       		.uleb128 0xb
+ 880 001a 3B       		.uleb128 0x3b
+ 881 001b 0B       		.uleb128 0xb
+ 882 001c 49       		.uleb128 0x49
+ 883 001d 13       		.uleb128 0x13
+ 884 001e 00       		.byte	0x0
+ 885 001f 00       		.byte	0x0
+ 886 0020 03       		.uleb128 0x3
+ 887 0021 24       		.uleb128 0x24
+ 888 0022 00       		.byte	0x0
+ 889 0023 03       		.uleb128 0x3
+ 890 0024 0E       		.uleb128 0xe
+ 891 0025 0B       		.uleb128 0xb
+ 892 0026 0B       		.uleb128 0xb
+ 893 0027 3E       		.uleb128 0x3e
+ 894 0028 0B       		.uleb128 0xb
+ 895 0029 00       		.byte	0x0
+ 896 002a 00       		.byte	0x0
+ 897 002b 04       		.uleb128 0x4
+ 898 002c 24       		.uleb128 0x24
+ 899 002d 00       		.byte	0x0
+ 900 002e 03       		.uleb128 0x3
+ 901 002f 08       		.uleb128 0x8
+ 902 0030 0B       		.uleb128 0xb
+ 903 0031 0B       		.uleb128 0xb
+ 904 0032 3E       		.uleb128 0x3e
+ 905 0033 0B       		.uleb128 0xb
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 22
+
+
+ 906 0034 00       		.byte	0x0
+ 907 0035 00       		.byte	0x0
+ 908 0036 05       		.uleb128 0x5
+ 909 0037 16       		.uleb128 0x16
+ 910 0038 00       		.byte	0x0
+ 911 0039 03       		.uleb128 0x3
+ 912 003a 0E       		.uleb128 0xe
+ 913 003b 3A       		.uleb128 0x3a
+ 914 003c 0B       		.uleb128 0xb
+ 915 003d 3B       		.uleb128 0x3b
+ 916 003e 0B       		.uleb128 0xb
+ 917 003f 49       		.uleb128 0x49
+ 918 0040 13       		.uleb128 0x13
+ 919 0041 00       		.byte	0x0
+ 920 0042 00       		.byte	0x0
+ 921 0043 06       		.uleb128 0x6
+ 922 0044 0F       		.uleb128 0xf
+ 923 0045 00       		.byte	0x0
+ 924 0046 0B       		.uleb128 0xb
+ 925 0047 0B       		.uleb128 0xb
+ 926 0048 00       		.byte	0x0
+ 927 0049 00       		.byte	0x0
+ 928 004a 07       		.uleb128 0x7
+ 929 004b 2E       		.uleb128 0x2e
+ 930 004c 01       		.byte	0x1
+ 931 004d 01       		.uleb128 0x1
+ 932 004e 13       		.uleb128 0x13
+ 933 004f 3F       		.uleb128 0x3f
+ 934 0050 0C       		.uleb128 0xc
+ 935 0051 03       		.uleb128 0x3
+ 936 0052 0E       		.uleb128 0xe
+ 937 0053 3A       		.uleb128 0x3a
+ 938 0054 0B       		.uleb128 0xb
+ 939 0055 3B       		.uleb128 0x3b
+ 940 0056 0B       		.uleb128 0xb
+ 941 0057 27       		.uleb128 0x27
+ 942 0058 0C       		.uleb128 0xc
+ 943 0059 49       		.uleb128 0x49
+ 944 005a 13       		.uleb128 0x13
+ 945 005b 11       		.uleb128 0x11
+ 946 005c 01       		.uleb128 0x1
+ 947 005d 12       		.uleb128 0x12
+ 948 005e 01       		.uleb128 0x1
+ 949 005f 40       		.uleb128 0x40
+ 950 0060 0A       		.uleb128 0xa
+ 951 0061 00       		.byte	0x0
+ 952 0062 00       		.byte	0x0
+ 953 0063 08       		.uleb128 0x8
+ 954 0064 34       		.uleb128 0x34
+ 955 0065 00       		.byte	0x0
+ 956 0066 03       		.uleb128 0x3
+ 957 0067 0E       		.uleb128 0xe
+ 958 0068 3A       		.uleb128 0x3a
+ 959 0069 0B       		.uleb128 0xb
+ 960 006a 3B       		.uleb128 0x3b
+ 961 006b 0B       		.uleb128 0xb
+ 962 006c 49       		.uleb128 0x49
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 23
+
+
+ 963 006d 13       		.uleb128 0x13
+ 964 006e 02       		.uleb128 0x2
+ 965 006f 0A       		.uleb128 0xa
+ 966 0070 00       		.byte	0x0
+ 967 0071 00       		.byte	0x0
+ 968 0072 09       		.uleb128 0x9
+ 969 0073 2E       		.uleb128 0x2e
+ 970 0074 00       		.byte	0x0
+ 971 0075 3F       		.uleb128 0x3f
+ 972 0076 0C       		.uleb128 0xc
+ 973 0077 03       		.uleb128 0x3
+ 974 0078 0E       		.uleb128 0xe
+ 975 0079 3A       		.uleb128 0x3a
+ 976 007a 0B       		.uleb128 0xb
+ 977 007b 3B       		.uleb128 0x3b
+ 978 007c 0B       		.uleb128 0xb
+ 979 007d 27       		.uleb128 0x27
+ 980 007e 0C       		.uleb128 0xc
+ 981 007f 49       		.uleb128 0x49
+ 982 0080 13       		.uleb128 0x13
+ 983 0081 11       		.uleb128 0x11
+ 984 0082 01       		.uleb128 0x1
+ 985 0083 12       		.uleb128 0x12
+ 986 0084 01       		.uleb128 0x1
+ 987 0085 40       		.uleb128 0x40
+ 988 0086 0A       		.uleb128 0xa
+ 989 0087 00       		.byte	0x0
+ 990 0088 00       		.byte	0x0
+ 991 0089 0A       		.uleb128 0xa
+ 992 008a 2E       		.uleb128 0x2e
+ 993 008b 01       		.byte	0x1
+ 994 008c 01       		.uleb128 0x1
+ 995 008d 13       		.uleb128 0x13
+ 996 008e 3F       		.uleb128 0x3f
+ 997 008f 0C       		.uleb128 0xc
+ 998 0090 03       		.uleb128 0x3
+ 999 0091 0E       		.uleb128 0xe
+ 1000 0092 3A       		.uleb128 0x3a
+ 1001 0093 0B       		.uleb128 0xb
+ 1002 0094 3B       		.uleb128 0x3b
+ 1003 0095 05       		.uleb128 0x5
+ 1004 0096 27       		.uleb128 0x27
+ 1005 0097 0C       		.uleb128 0xc
+ 1006 0098 11       		.uleb128 0x11
+ 1007 0099 01       		.uleb128 0x1
+ 1008 009a 12       		.uleb128 0x12
+ 1009 009b 01       		.uleb128 0x1
+ 1010 009c 40       		.uleb128 0x40
+ 1011 009d 06       		.uleb128 0x6
+ 1012 009e 00       		.byte	0x0
+ 1013 009f 00       		.byte	0x0
+ 1014 00a0 0B       		.uleb128 0xb
+ 1015 00a1 34       		.uleb128 0x34
+ 1016 00a2 00       		.byte	0x0
+ 1017 00a3 03       		.uleb128 0x3
+ 1018 00a4 0E       		.uleb128 0xe
+ 1019 00a5 3A       		.uleb128 0x3a
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 24
+
+
+ 1020 00a6 0B       		.uleb128 0xb
+ 1021 00a7 3B       		.uleb128 0x3b
+ 1022 00a8 05       		.uleb128 0x5
+ 1023 00a9 49       		.uleb128 0x49
+ 1024 00aa 13       		.uleb128 0x13
+ 1025 00ab 02       		.uleb128 0x2
+ 1026 00ac 0A       		.uleb128 0xa
+ 1027 00ad 00       		.byte	0x0
+ 1028 00ae 00       		.byte	0x0
+ 1029 00af 0C       		.uleb128 0xc
+ 1030 00b0 2E       		.uleb128 0x2e
+ 1031 00b1 01       		.byte	0x1
+ 1032 00b2 01       		.uleb128 0x1
+ 1033 00b3 13       		.uleb128 0x13
+ 1034 00b4 3F       		.uleb128 0x3f
+ 1035 00b5 0C       		.uleb128 0xc
+ 1036 00b6 03       		.uleb128 0x3
+ 1037 00b7 0E       		.uleb128 0xe
+ 1038 00b8 3A       		.uleb128 0x3a
+ 1039 00b9 0B       		.uleb128 0xb
+ 1040 00ba 3B       		.uleb128 0x3b
+ 1041 00bb 0B       		.uleb128 0xb
+ 1042 00bc 27       		.uleb128 0x27
+ 1043 00bd 0C       		.uleb128 0xc
+ 1044 00be 11       		.uleb128 0x11
+ 1045 00bf 01       		.uleb128 0x1
+ 1046 00c0 12       		.uleb128 0x12
+ 1047 00c1 01       		.uleb128 0x1
+ 1048 00c2 40       		.uleb128 0x40
+ 1049 00c3 06       		.uleb128 0x6
+ 1050 00c4 00       		.byte	0x0
+ 1051 00c5 00       		.byte	0x0
+ 1052 00c6 0D       		.uleb128 0xd
+ 1053 00c7 34       		.uleb128 0x34
+ 1054 00c8 00       		.byte	0x0
+ 1055 00c9 03       		.uleb128 0x3
+ 1056 00ca 0E       		.uleb128 0xe
+ 1057 00cb 3A       		.uleb128 0x3a
+ 1058 00cc 0B       		.uleb128 0xb
+ 1059 00cd 3B       		.uleb128 0x3b
+ 1060 00ce 0B       		.uleb128 0xb
+ 1061 00cf 49       		.uleb128 0x49
+ 1062 00d0 13       		.uleb128 0x13
+ 1063 00d1 02       		.uleb128 0x2
+ 1064 00d2 06       		.uleb128 0x6
+ 1065 00d3 00       		.byte	0x0
+ 1066 00d4 00       		.byte	0x0
+ 1067 00d5 0E       		.uleb128 0xe
+ 1068 00d6 34       		.uleb128 0x34
+ 1069 00d7 00       		.byte	0x0
+ 1070 00d8 03       		.uleb128 0x3
+ 1071 00d9 0E       		.uleb128 0xe
+ 1072 00da 3A       		.uleb128 0x3a
+ 1073 00db 0B       		.uleb128 0xb
+ 1074 00dc 3B       		.uleb128 0x3b
+ 1075 00dd 0B       		.uleb128 0xb
+ 1076 00de 49       		.uleb128 0x49
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 25
+
+
+ 1077 00df 13       		.uleb128 0x13
+ 1078 00e0 00       		.byte	0x0
+ 1079 00e1 00       		.byte	0x0
+ 1080 00e2 0F       		.uleb128 0xf
+ 1081 00e3 2E       		.uleb128 0x2e
+ 1082 00e4 01       		.byte	0x1
+ 1083 00e5 01       		.uleb128 0x1
+ 1084 00e6 13       		.uleb128 0x13
+ 1085 00e7 03       		.uleb128 0x3
+ 1086 00e8 0E       		.uleb128 0xe
+ 1087 00e9 3A       		.uleb128 0x3a
+ 1088 00ea 0B       		.uleb128 0xb
+ 1089 00eb 3B       		.uleb128 0x3b
+ 1090 00ec 05       		.uleb128 0x5
+ 1091 00ed 27       		.uleb128 0x27
+ 1092 00ee 0C       		.uleb128 0xc
+ 1093 00ef 11       		.uleb128 0x11
+ 1094 00f0 01       		.uleb128 0x1
+ 1095 00f1 12       		.uleb128 0x12
+ 1096 00f2 01       		.uleb128 0x1
+ 1097 00f3 40       		.uleb128 0x40
+ 1098 00f4 06       		.uleb128 0x6
+ 1099 00f5 00       		.byte	0x0
+ 1100 00f6 00       		.byte	0x0
+ 1101 00f7 10       		.uleb128 0x10
+ 1102 00f8 05       		.uleb128 0x5
+ 1103 00f9 00       		.byte	0x0
+ 1104 00fa 03       		.uleb128 0x3
+ 1105 00fb 08       		.uleb128 0x8
+ 1106 00fc 3A       		.uleb128 0x3a
+ 1107 00fd 0B       		.uleb128 0xb
+ 1108 00fe 3B       		.uleb128 0x3b
+ 1109 00ff 05       		.uleb128 0x5
+ 1110 0100 49       		.uleb128 0x49
+ 1111 0101 13       		.uleb128 0x13
+ 1112 0102 02       		.uleb128 0x2
+ 1113 0103 06       		.uleb128 0x6
+ 1114 0104 00       		.byte	0x0
+ 1115 0105 00       		.byte	0x0
+ 1116 0106 11       		.uleb128 0x11
+ 1117 0107 35       		.uleb128 0x35
+ 1118 0108 00       		.byte	0x0
+ 1119 0109 49       		.uleb128 0x49
+ 1120 010a 13       		.uleb128 0x13
+ 1121 010b 00       		.byte	0x0
+ 1122 010c 00       		.byte	0x0
+ 1123 010d 12       		.uleb128 0x12
+ 1124 010e 01       		.uleb128 0x1
+ 1125 010f 01       		.byte	0x1
+ 1126 0110 01       		.uleb128 0x1
+ 1127 0111 13       		.uleb128 0x13
+ 1128 0112 49       		.uleb128 0x49
+ 1129 0113 13       		.uleb128 0x13
+ 1130 0114 00       		.byte	0x0
+ 1131 0115 00       		.byte	0x0
+ 1132 0116 13       		.uleb128 0x13
+ 1133 0117 21       		.uleb128 0x21
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 26
+
+
+ 1134 0118 00       		.byte	0x0
+ 1135 0119 49       		.uleb128 0x49
+ 1136 011a 13       		.uleb128 0x13
+ 1137 011b 2F       		.uleb128 0x2f
+ 1138 011c 05       		.uleb128 0x5
+ 1139 011d 00       		.byte	0x0
+ 1140 011e 00       		.byte	0x0
+ 1141 011f 00       		.byte	0x0
+ 1142              		.section	.debug_pubnames,"",%progbits
+ 1143 0000 47000000 		.4byte	0x47
+ 1144 0004 0200     		.2byte	0x2
+ 1145 0006 00000000 		.4byte	.Ldebug_info0
+ 1146 000a 3B020000 		.4byte	0x23b
+ 1147 000e 6E000000 		.4byte	0x6e
+ 1148 0012 63686563 		.ascii	"checkKey\000"
+ 1148      6B4B6579 
+ 1148      00
+ 1149 001b 97000000 		.4byte	0x97
+ 1150 001f 63686563 		.ascii	"checkKey2\000"
+ 1150      6B4B6579 
+ 1150      3200
+ 1151 0029 AE000000 		.4byte	0xae
+ 1152 002d 696E6974 		.ascii	"initKeyProc\000"
+ 1152      4B657950 
+ 1152      726F6300 
+ 1153 0039 D8000000 		.4byte	0xd8
+ 1154 003d 73616D70 		.ascii	"sampleKey\000"
+ 1154      6C654B65 
+ 1154      7900
+ 1155 0047 00000000 		.4byte	0x0
+ 1156              		.section	.debug_aranges,"",%progbits
+ 1157 0000 1C000000 		.4byte	0x1c
+ 1158 0004 0200     		.2byte	0x2
+ 1159 0006 00000000 		.4byte	.Ldebug_info0
+ 1160 000a 04       		.byte	0x4
+ 1161 000b 00       		.byte	0x0
+ 1162 000c 0000     		.2byte	0x0
+ 1163 000e 0000     		.2byte	0x0
+ 1164 0010 00000000 		.4byte	.Ltext0
+ 1165 0014 DE010000 		.4byte	.Letext0-.Ltext0
+ 1166 0018 00000000 		.4byte	0x0
+ 1167 001c 00000000 		.4byte	0x0
+ 1168              		.section	.debug_str,"MS",%progbits,1
+ 1169              	.LASF17:
+ 1170 0000 6B65794C 		.ascii	"keyLeftReleased\000"
+ 1170      65667452 
+ 1170      656C6561 
+ 1170      73656400 
+ 1171              	.LASF20:
+ 1172 0010 75704B65 		.ascii	"upKeyCnt\000"
+ 1172      79436E74 
+ 1172      00
+ 1173              	.LASF29:
+ 1174 0019 6B65792E 		.ascii	"key.c\000"
+ 1174      6300
+ 1175              	.LASF16:
+ 1176 001f 6B657944 		.ascii	"keyDownReleased\000"
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 27
+
+
+ 1176      6F776E52 
+ 1176      656C6561 
+ 1176      73656400 
+ 1177              	.LASF26:
+ 1178 002f 6B657950 		.ascii	"keyProcStack\000"
+ 1178      726F6353 
+ 1178      7461636B 
+ 1178      00
+ 1179              	.LASF9:
+ 1180 003c 72657456 		.ascii	"retVal\000"
+ 1180      616C00
+ 1181              	.LASF23:
+ 1182 0043 72696768 		.ascii	"rightKeyCnt\000"
+ 1182      744B6579 
+ 1182      436E7400 
+ 1183              	.LASF8:
+ 1184 004f 696E6974 		.ascii	"initKeyProc\000"
+ 1184      4B657950 
+ 1184      726F6300 
+ 1185              	.LASF14:
+ 1186 005b 63656E74 		.ascii	"centerReleased\000"
+ 1186      65725265 
+ 1186      6C656173 
+ 1186      656400
+ 1187              	.LASF0:
+ 1188 006a 756E7369 		.ascii	"unsigned char\000"
+ 1188      676E6564 
+ 1188      20636861 
+ 1188      7200
+ 1189              	.LASF6:
+ 1190 0078 6C6F6E67 		.ascii	"long unsigned int\000"
+ 1190      20756E73 
+ 1190      69676E65 
+ 1190      6420696E 
+ 1190      7400
+ 1191              	.LASF32:
+ 1192 008a 70726F63 		.ascii	"procKey\000"
+ 1192      4B657900 
+ 1193              	.LASF1:
+ 1194 0092 73686F72 		.ascii	"short unsigned int\000"
+ 1194      7420756E 
+ 1194      7369676E 
+ 1194      65642069 
+ 1194      6E7400
+ 1195              	.LASF24:
+ 1196 00a5 61637469 		.ascii	"activeKey\000"
+ 1196      76654B65 
+ 1196      7900
+ 1197              	.LASF12:
+ 1198 00af 6E6F7468 		.ascii	"nothing\000"
+ 1198      696E6700 
+ 1199              	.LASF21:
+ 1200 00b7 646F776E 		.ascii	"downKeyCnt\000"
+ 1200      4B657943 
+ 1200      6E7400
+ 1201              	.LASF15:
+ 1202 00c2 6B657955 		.ascii	"keyUpReleased\000"
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 28
+
+
+ 1202      7052656C 
+ 1202      65617365 
+ 1202      6400
+ 1203              	.LASF2:
+ 1204 00d0 756E7369 		.ascii	"unsigned int\000"
+ 1204      676E6564 
+ 1204      20696E74 
+ 1204      00
+ 1205              	.LASF19:
+ 1206 00dd 63656E74 		.ascii	"centerKeyCnt\000"
+ 1206      65724B65 
+ 1206      79436E74 
+ 1206      00
+ 1207              	.LASF13:
+ 1208 00ea 72656164 		.ascii	"readKeys\000"
+ 1208      4B657973 
+ 1208      00
+ 1209              	.LASF28:
+ 1210 00f3 474E5520 		.ascii	"GNU C 4.1.1\000"
+ 1210      4320342E 
+ 1210      312E3100 
+ 1211              	.LASF25:
+ 1212 00ff 61637469 		.ascii	"activeKey2\000"
+ 1212      76654B65 
+ 1212      793200
+ 1213              	.LASF4:
+ 1214 010a 73686F72 		.ascii	"short int\000"
+ 1214      7420696E 
+ 1214      7400
+ 1215              	.LASF10:
+ 1216 0114 6572726F 		.ascii	"error\000"
+ 1216      7200
+ 1217              	.LASF22:
+ 1218 011a 6C656674 		.ascii	"leftKeyCnt\000"
+ 1218      4B657943 
+ 1218      6E7400
+ 1219              	.LASF7:
+ 1220 0125 63686563 		.ascii	"checkKey\000"
+ 1220      6B4B6579 
+ 1220      00
+ 1221              	.LASF30:
+ 1222 012e 2F637967 		.ascii	"/cygdrive/z/2048\000"
+ 1222      64726976 
+ 1222      652F7A2F 
+ 1222      32303438 
+ 1222      00
+ 1223              	.LASF27:
+ 1224 013f 6B657950 		.ascii	"keyProcPid\000"
+ 1224      726F6350 
+ 1224      696400
+ 1225              	.LASF3:
+ 1226 014a 7369676E 		.ascii	"signed char\000"
+ 1226      65642063 
+ 1226      68617200 
+ 1227              	.LASF5:
+ 1228 0156 74426F6F 		.ascii	"tBool\000"
+ 1228      6C00
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 29
+
+
+ 1229              	.LASF31:
+ 1230 015c 63686563 		.ascii	"checkKey2\000"
+ 1230      6B4B6579 
+ 1230      3200
+ 1231              	.LASF11:
+ 1232 0166 73616D70 		.ascii	"sampleKey\000"
+ 1232      6C654B65 
+ 1232      7900
+ 1233              	.LASF18:
+ 1234 0170 6B657952 		.ascii	"keyRightReleased\000"
+ 1234      69676874 
+ 1234      52656C65 
+ 1234      61736564 
+ 1234      00
+ 1235              		.ident	"GCC: (GNU) 4.1.1"
+ARM GAS  /cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s 			page 30
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 key.c
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:1      .text:00000000 $t
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:16     .text:00000000 checkKey
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:35     .text:0000000c $d
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:405    .bss:00000000 activeKey
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:43     .text:00000010 checkKey2
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:40     .text:00000010 $t
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:57     .text:00000018 $d
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:407    .bss:00000001 activeKey2
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:65     .text:0000001c initKeyProc
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:62     .text:0000001c $t
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:100    .text:00000050 $d
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:439    .bss:00000133 keyProcPid
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:383    .text:000001d0 procKey
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:437    .bss:00000007 keyProcStack
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:110    .text:0000005c sampleKey
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:107    .text:0000005c $t
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:365    .text:000001a0 $d
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:402    .data:00000000 centerReleased
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:427    .bss:00000002 centerKeyCnt
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:412    .data:00000001 keyUpReleased
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:429    .bss:00000003 upKeyCnt
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:416    .data:00000002 keyDownReleased
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:431    .bss:00000004 downKeyCnt
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:420    .data:00000003 keyLeftReleased
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:433    .bss:00000005 leftKeyCnt
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:424    .data:00000004 keyRightReleased
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:435    .bss:00000006 rightKeyCnt
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:380    .text:000001d0 $t
+                             .bss:00000000 $d
+/cygdrive/c/Users/embedded/AppData/Local/Temp/cctJWvX2.s:409    .bss:00000002 $d
+
+UNDEFINED SYMBOLS
+osCreateProcess
+osStartProcess
+getKeys
+osSleep

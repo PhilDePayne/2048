@@ -1,0 +1,407 @@
+;-----------------------------------------------------------------------------
+; This file contains the startup code used by the ICCARM C compiler.
+;
+; The modules in this file are included in the libraries, and may be replaced
+; by any user-defined modules that define the PUBLIC symbol _program_start or
+; a user defined start symbol.
+; To override the cstartup defined in the library, simply add your modified
+; version to the workbench project.
+;
+; All code in the modules (except ?RESET) will be placed in the ICODE segment.
+;
+; $Revision: 1.2 $
+;
+;-----------------------------------------------------------------------------
+
+#include "config.h"
+	
+;
+; Naming covention of labels in this file:
+;
+;  ?xxx	  - External labels only accessed from assembler.
+;  __xxx  - External labels accessed from or defined in C.
+;  xxx	  - Labels local to one module (note: this file contains
+;           several modules).
+;  main	  - The starting point of the user program.
+;
+
+;---------------------------------------------------------------
+; Macros and definitions for the whole file
+;---------------------------------------------------------------
+
+; Mode, correspords to bits 0-5 in CPSR
+MODE_BITS	DEFINE	0x1F		; Bit mask for mode bits in CPSR
+USR_MODE	DEFINE	0x10		; User mode
+FIQ_MODE	DEFINE	0x11		; Fast Interrupt Request mode
+IRQ_MODE	DEFINE	0x12		; Interrupt Request mode
+SVC_MODE	DEFINE	0x13		; Supervisor mode
+ABT_MODE	DEFINE	0x17		; Abort mode
+UND_MODE	DEFINE	0x1B		; Undefined Instruction mode
+SYS_MODE	DEFINE	0x1F		; System mode
+
+#define        Mode_USR       0x10
+#define        Mode_FIQ       0x11
+#define        Mode_IRQ       0x12
+#define        Mode_SVC       0x13
+#define        Mode_ABT       0x17
+#define        Mode_UND       0x1B
+#define        Mode_SYS       0x1F
+
+#define        I_Bit          0x80        /* when I bit is set, IRQ is disabled */
+#define        F_Bit          0x40        /* when F bit is set, FIQ is disabled */
+
+#define        sram_bottom SRAM_SADDR
+#define        sram_top    SRAM_TOP
+#define        stackTop    SRAM_TOP
+
+#define VAL_PLLCFG_MSEL  ((PLL_MUL - 1) << 0)
+#if (PLL_DIV == 1)
+#define PLL_DIV_VALUE 0x00
+#elif (PLL_DIV == 2)
+#define PLL_DIV_VALUE 0x01
+#elif (PLL_DIV == 4)
+#define PLL_DIV_VALUE 0x10
+#elif (PLL_DIV == 8)
+#define PLL_DIV_VALUE 0x11
+#endif
+#define VAL_PLLCFG_PSEL  (PLL_DIV_VALUE << 5)
+#define VAL_PLLCFG       (VAL_PLLCFG_MSEL | VAL_PLLCFG_PSEL)
+
+; Phase Locked Loop (PLL) definitions
+#define        PLL_BASE       0xE01FC080  /* PLL Base Address */
+#define        PLLCON_OFS     0x00        /* PLL Control Offset*/
+#define        PLLCFG_OFS     0x04        /* PLL Configuration Offset */
+#define        PLLSTAT_OFS    0x08        /* PLL Status Offset */
+#define        PLLFEED_OFS    0x0C        /* PLL Feed Offset */
+#define        PLLCON_PLLE    (1<<0)      /* PLL Enable */
+#define        PLLCON_PLLC    (1<<1)      /* PLL Connect */
+#define        PLLSTAT_PLOCK  (1<<10)     /* PLL Lock Status */
+
+
+;---------------------------------------------------------------
+; ?RESET
+; Reset Vector.
+; Normally, segment INTVEC is linked at address 0.
+; For debugging purposes, INTVEC may be placed at other
+; addresses.
+; A debugger that honors the entry point will start the
+; program in a normal way even if INTVEC is not at address 0.
+;---------------------------------------------------------------
+
+		MODULE	?RESET
+		COMMON	INTVEC:CODE:NOROOT(2)
+		PUBLIC  __program_start
+		EXTERN	?cstartup
+		EXTERN	HandleUndef, HandleSWI, HandlePabort
+		EXTERN	HandleDabort, HandleIRQ, HandleFIQ
+;		EXTERN	undef_handler, swi_handler, prefetch_handler
+;		EXTERN	data_handler, irq_handler, fiq_handler
+                CODE32	; Always ARM mode after reset	
+		org	0x00
+__program_start
+#if (MAM_MAP == 1)
+                ldr pc,=?cstartup           /* jump to reset code              */
+        org 0x04
+                B HandlerUndef              /* handlerUndef                    */
+        org 0x08
+                B HandlerSWI                /* SWI interrupt handler           */
+        org 0x0C
+                B HandlerPabort             /* handlerPAbort                   */
+        org 0x10
+                B HandlerDabort             /* handlerDAbort                   */
+        org 0x14
+                DC32 0x9E600ECF                         /* Reserved Vector                 */
+#if (IRQ_HANDLER == 0)
+        org 0x18
+                B HandlerIRQ                /* handlerIRQ                      */
+#else
+        org 0x18
+                LDR PC,[PC,#-0xFF0]         /* jump to address supplied by VIC */
+#endif
+        org 0x1c
+                B HandlerFIQ                /* handlerFIQ                      */
+
+; Create handlers
+;  HANDLER HandlerUndef,  HandleUndef
+HandlerUndef
+        sub   r13, r13, #4
+  mov r4,lr
+        stmfd r13!, {r0}
+        ldr   r0, =HandleUndef
+        ldr   r0, [r0,#0]
+        str   r0, [sp,#4]
+        ldmfd r13!, {r0,pc}
+
+;  HANDLER HandlerSWI,    HandleSWI
+HandlerSWI
+        sub   r13, r13, #4
+  mov r4,lr
+        stmfd r13!, {r0}
+        ldr   r0, =HandleSWI
+        ldr   r0, [r0,#0]
+        str   r0, [sp,#4]
+        ldmfd r13!, {r0,pc}
+
+;  HANDLER HandlerPabort, HandlePabort
+HandlerPabort
+        sub   r13, r13, #4
+  mov r4,lr
+        stmfd r13!, {r0}
+        ldr   r0, =HandlePabort
+        ldr   r0, [r0,#0]
+        str   r0, [sp,#4]
+        ldmfd r13!, {r0,pc}
+
+;  HANDLER HandlerDabort, HandleDabort
+HandlerDabort
+        sub   r13, r13, #4
+  mov r4,lr
+        stmfd r13!, {r0}
+        ldr   r0, =HandleDabort
+        ldr   r0, [r0,#0]
+        str   r0, [sp,#4]
+        ldmfd r13!, {r0,pc}
+
+#if (IRQ_HANDLER == 0)
+;  HANDLER HandlerIRQ,    HandleIRQ
+HandlerIRQ
+        sub   r13, r13, #4
+        stmfd r13!, {r0}
+        ldr   r0, =HandleIRQ
+        ldr   r0, [r0,#0]
+        str   r0, [sp,#4]
+        ldmfd r13!, {r0,pc}
+#endif
+
+;  HANDLER HandlerFIQ,    HandleFIQ
+HandlerFIQ
+        sub   r13, r13, #4
+  mov r4,lr
+        stmfd r13!, {r0}
+        ldr   r0, =HandleFIQ
+        ldr   r0, [r0,#0]
+        str   r0, [sp,#4]
+        ldmfd r13!, {r0,pc}
+
+; If vectors are in RAM, starting at 0x40000000
+#else
+                LDR PC,[PC,#resetHandlerAddress - . - 8]    /* handle reset                      */
+                LDR PC,[PC,#undefHandlerAddress - . - 8]    /* handlerUndef                      */
+                LDR PC,[PC,#swiHandlerAddress - . - 8]      /* SWI interrupt handler             */
+                LDR PC,[PC,#pabortHandlerAddress - . - 8]   /* handlerPAbort                     */
+                LDR PC,[PC,#dabortHandlerAddress - . - 8]   /* handlerDAbort                     */
+                NOP                                         /* Reserved Vector                   */
+#if (IRQ_HANDLER == 0)
+                LDR PC,[PC,#irqHandlerAddress - . - 8]      /* jump to common irq handler        */
+#else
+                LDR PC,[PC,#-0xFF0]                         /* jump to address supplied from VIC */
+#endif
+                LDR PC,[PC,#fiqHandlerAddress - . - 8]      /* handlerFIQ                        */
+
+resetHandlerAddress:
+  DC32
+
+undefHandlerAddress:
+  DC32
+
+swiHandlerAddress:
+  DC32
+
+pabortHandlerAddress:
+  DC32
+
+dabortHandlerAddress:
+  DC32
+
+irqHandlerAddress:
+  DC32
+
+fiqHandlerAddress:
+  DC32
+
+#endif
+      LTORG
+      ENDMOD
+
+
+;---------------------------------------------------------------
+; ?CSTARTUP
+;---------------------------------------------------------------
+		MODULE	?CSTARTUP
+
+		RSEG	IRQ_STACK:DATA(2)
+		
+		RSEG	ABT_STACK:DATA:NOROOT(2)
+		RSEG	UND_STACK:DATA:NOROOT(2)
+		RSEG	FIR_STACK:DATA:NOROOT(2)
+		RSEG	SVC_STACK:DATA:NOROOT(2)
+		RSEG	CSTACK:DATA(2)
+		RSEG	ICODE:CODE:NOROOT(2)
+
+		PUBLIC	?cstartup
+		EXTERN	?main
+		EXTERN	lowLevelInit
+		EXTERN	exceptionHandlerInit
+
+; Execution starts here.
+; After a reset, the mode is ARM, Supervisor, interrupts disabled.
+
+		CODE32
+?cstartup
+
+; Add initialization nedded before setup of stackpointers here
+#if (USE_PLL == 1)
+                LDR     R0, =PLL_BASE
+                MOV     R1, #0xAA
+                MOV     R2, #0x55
+
+; Disable PLL before programming (in case it was enabled before)
+                MOV     R3, #0
+                STR     R3, [R0, #PLLCON_OFS]
+                STR     R1, [R0, #PLLFEED_OFS]
+                STR     R2, [R0, #PLLFEED_OFS]
+
+; Configure and Enable PLL
+                MOV     R3, #VAL_PLLCFG
+                STR     R3, [R0, #PLLCFG_OFS] 
+                MOV     R3, #PLLCON_PLLE
+                STR     R3, [R0, #PLLCON_OFS]
+                STR     R1, [R0, #PLLFEED_OFS]
+                STR     R2, [R0, #PLLFEED_OFS]
+
+; Wait until PLL Locked
+PLL_Loop:       LDR     R3, [R0, #PLLSTAT_OFS]
+                ANDS    R3, R3, #PLLSTAT_PLOCK
+                BEQ     PLL_Loop
+
+; Switch to PLL Clock
+                MOV     R3, #(PLLCON_PLLE | PLLCON_PLLC)
+                STR     R3, [R0, #PLLCON_OFS]
+                STR     R1, [R0, #PLLFEED_OFS]
+                STR     R2, [R0, #PLLFEED_OFS]
+#endif
+
+
+; Initialize the stack pointers.
+; The pattern below can be used for any of the exception stacks:
+; FIQ, IRQ, SVC, ABT, UND, SYS.
+; The USR mode uses the same stack as SYS.
+; The stack segments must be defined in the linker command file,
+; and be declared above.
+
+                mrs     r0,cpsr                             ; Original PSR value
+                bic     r0,r0,#MODE_BITS                    ; Clear the mode bits
+                orr     r0,r0,#IRQ_MODE                     ; Set IRQ mode bits
+                msr     cpsr_c,r0                           ; Change the mode
+                ldr     sp,=SFE(IRQ_STACK) & 0xFFFFFFF8     ; End of IRQ_STACK
+
+                bic     r0,r0,#MODE_BITS                    ; Clear the mode bits
+                orr     r0,r0,#ABT_MODE                     ; Set Abort mode bits
+                msr     cpsr_c,r0                           ; Change the mode
+                ldr     sp,=SFE(ABT_STACK) & 0xFFFFFFF8     ; End of ABT_STACK
+
+                bic     r0,r0,#MODE_BITS                    ; Clear the mode bits
+                orr     r0,r0,#SVC_MODE                     ; Set Supervisor mode bits
+                msr     cpsr_c,r0                           ; Change the mode
+                ldr     sp,=SFE(SVC_STACK) & 0xFFFFFFF8     ; End of SVC_STACK
+
+                bic     r0,r0,#MODE_BITS                    ; Clear the mode bits
+                orr     r0,r0,#UND_MODE                     ; Set Undefined mode bits
+                msr     cpsr_c,r0                           ; Change the mode
+                ldr     sp,=SFE(UND_STACK) & 0xFFFFFFF8     ; End of FIR_STACK
+
+                bic     r0,r0,#MODE_BITS                    ; Clear the mode bits
+                orr     r0,r0,#FIQ_MODE                     ; Set FIR mode bits
+                msr     cpsr_c,r0                           ; Change the mode
+                ldr     sp,=SFE(FIR_STACK) & 0xFFFFFFF8     ; End of FIR_STACK
+
+                bic     r0,r0,#MODE_BITS                    ; Clear the mode bits
+                orr     r0,r0,#SYS_MODE                     ; Set System mode bits
+                msr     cpsr_c,r0                           ; Change the mode
+                ldr     sp,=SFE(CSTACK) & 0xFFFFFFF8        ; End of CSTACK
+
+
+#ifdef __ARMVFP__
+; Enable the VFP coprocessor.
+                mov     r0, #0x40000000                 ; Set EN bit in VFP
+                fmxr    fpexc, r0                       ; FPEXC, clear others.
+
+; Disable underflow exceptions by setting flush to zero mode.
+; For full IEEE 754 underflow compliance this code should be removed
+; and the appropriate exception handler installed.
+                mov     r0, #0x01000000		        ; Set FZ bit in VFP
+                fmxr    fpscr, r0                       ; FPSCR, clear others.
+#endif
+
+; Add more initialization here
+
+#if (MAM_MAP == 2)
+; Copy exception vectors into SRAM
+                MOV     R8, #SRAM_SADDR
+                LDR     R9, =Vectors
+;               Move exception vectors (7 vectors + 1 reserved)
+                LDMIA   R9!, {R0-R7}
+                STMIA   R8!, {R0-R7}
+;               Move addresses belonging to exception vectors (7 addresses)
+                LDMIA   R9!, {R0-R6}
+                STMIA   R8!, {R0-R6}
+#endif
+
+;  Call low-level initialization
+                LDR     R0, =lowLevelInit
+                MOV     LR, PC
+                BX      R0
+
+; Initialize exception vectors
+                LDR     R0,=exceptionHandlerInit
+                MOV     LR, PC
+                BX      R0
+
+; Continue to ?main for more IAR specific system startup
+                LDR     r0,=?main
+                BX      r0
+
+                LTORG
+
+                ENDMOD
+
+		MODULE	VECTOR_RELOCATION
+
+		ASEG 0x40000000(2)
+		PUBLIC	HandleReset
+		PUBLIC	HandleUndef
+		PUBLIC	HandleSWI
+		PUBLIC	HandlePabort
+		PUBLIC	HandleDabort
+		PUBLIC  HandleIRQ
+		PUBLIC  HandleFIQ
+		DATA
+;
+; Reserve memory for exception handlers
+;
+  org 0x40000020
+HandleReset
+
+  org 0x40000024
+HandleUndef
+
+  org 0x40000028
+HandleSWI
+
+  org 0x4000002c
+HandlePabort
+
+  org 0x40000030
+HandleDabort
+
+  org 0x40000034
+HandleIRQ
+
+  org 0x40000038
+HandleFIQ
+
+                ENDMOD
+
+
+                END
+
